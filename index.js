@@ -117,9 +117,10 @@ header.encode = function (h, buf, offset) {
 
   const flags = (h.flags || 0) & 32767
   const type = h.type === 'response' ? RESPONSE_FLAG : QUERY_FLAG
+  const opcode = opcodes.toOpcode(h.opcode || 'QUERY') << 11
 
   buf.writeUInt16BE(h.id || 0, offset)
-  buf.writeUInt16BE(flags | type, offset + 2)
+  buf.writeUInt16BE(flags | type | opcode, offset + 2)
   buf.writeUInt16BE(h.questions.length, offset + 4)
   buf.writeUInt16BE(h.answers.length, offset + 6)
   buf.writeUInt16BE(h.authorities.length, offset + 8)

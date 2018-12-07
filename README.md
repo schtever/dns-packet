@@ -72,6 +72,7 @@ Packets look like this
 ``` js
 {
   type: 'query|response',
+  opcode: 'QUERY|UPDATE',
   id: optionalIdNumber,
   flags: optionalBitFlags,
   questions: [...],
@@ -125,6 +126,13 @@ And an answers, additional, or authority looks like this
   (record specific data, see below)
 }
 ```
+
+To perform an RFC2136 dynamic update, 
+set the `opcode` to 'UPDATE',
+the `questions` to a single record with the SOA of the zone to update, 
+the `answers` to the prerequisites, 
+and the `authorities` to the records that are to be added or deleted.
+Make sure to send the packet to the server that is the master for the zone.
 
 ## Supported record types
 

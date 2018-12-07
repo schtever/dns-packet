@@ -115,7 +115,7 @@ header.encode = function (h, buf, offset) {
   if (!buf) buf = header.encodingLength(h)
   if (!offset) offset = 0
 
-  const flags = (h.flags || 0) & 32767
+  const flags = (h.flags || 0) & 2047
   const type = h.type === 'response' ? RESPONSE_FLAG : QUERY_FLAG
   const opcode = opcodes.toOpcode(h.opcode || 'QUERY') << 11
 
@@ -139,7 +139,7 @@ header.decode = function (buf, offset) {
   return {
     id: buf.readUInt16BE(offset),
     type: flags & RESPONSE_FLAG ? 'response' : 'query',
-    flags: flags & 32767,
+    flags: flags & 2047,
     flag_qr: ((flags >> 15) & 0x1) === 1,
     opcode: opcodes.toString((flags >> 11) & 0xf),
     flag_aa: ((flags >> 10) & 0x1) === 1,

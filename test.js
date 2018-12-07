@@ -233,6 +233,50 @@ tape('response', function (t) {
   t.end()
 })
 
+tape('update', function (t) {
+  testEncoder(t, packet, {
+    opcode: 'UPDATE',
+    questions: [{
+      type: 'SOA',
+      name: 'a.com'
+    }],
+    authorities: [{
+      type: 'A',
+      name: 'addhello.a.com',
+      data: '192.168.196.61',
+      ttl: 86400
+    }]
+  })
+
+  testEncoder(t, packet, {
+    id: 12345,
+    type: 'response',
+    opcode: 'UPDATE',
+    questions: [{
+      type: 'SOA',
+      name: 'a.com'
+    }],
+    rcode: 'NOERROR'
+  })
+
+  testEncoder(t, packet, {
+    opcode: 'UPDATE',
+    questions: [{
+      type: 'SOA',
+      name: 'a.com'
+    }],
+    authorities: [{
+      type: 'A',
+      name: 'delhello.a.com',
+      data: '192.168.196.61',
+      class: 'NONE',
+      ttl: 0
+    }]
+  })
+
+  t.end()
+})
+
 tape('rcode', function (t) {
   const errors = ['NOERROR', 'FORMERR', 'SERVFAIL', 'NXDOMAIN', 'NOTIMP', 'REFUSED', 'YXDOMAIN', 'YXRRSET', 'NXRRSET', 'NOTAUTH', 'NOTZONE', 'RCODE_11', 'RCODE_12', 'RCODE_13', 'RCODE_14', 'RCODE_15']
   for (const i in errors) {
@@ -527,6 +571,7 @@ function compare (t, a, b) {
     const keys = Object.keys(a)
     for (let i = 0; i < keys.length; i++) {
       if (!compare(t, a[keys[i]], b[keys[i]])) {
+        t.comment('Compare failed on attribute "' + keys[i] + '" expected "' + a[keys[i]] + '" actual "' + b[keys[i]] + '"')
         return false
       }
     }

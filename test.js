@@ -274,6 +274,34 @@ tape('update', function (t) {
     }]
   })
 
+  testEncoder(t, packet, {
+    opcode: 'UPDATE',
+    questions: [{
+      type: 'SOA',
+      name: 'a.com'
+    }],
+    authorities: [{
+      type: 'A',
+      name: 'addhello.a.com',
+      data: '192.168.196.61',
+      ttl: 86400
+    }],
+    additionals: [ {
+      type: 'TSIG',
+      name: 'HOST.EXAMPLE',
+      class: 'ANY',
+      ttl: 0,
+      data: {
+        algorithm: 'HMAC-MD5.SIG-ALG.REG.INT',
+        time_signed: 853804800,
+        fudge: 300,
+        mac: Buffer.from([0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]),
+        original_id: 7654,
+        error: 'NOERROR'
+      }
+    }]
+  })
+
   t.end()
 })
 
@@ -502,6 +530,27 @@ tape('ds', function (t) {
     algorithm: 1,
     digestType: 1,
     digest: Buffer.from([0, 1, 2, 3, 4, 5])
+  })
+  t.end()
+})
+
+tape('tsig', function (t) {
+  testEncoder(t, packet.tsig, {
+    algorithm: 'HMAC-MD5.SIG-ALG.REG.INT',
+    time_signed: 853804800,
+    fudge: 300,
+    mac: Buffer.from([0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]),
+    original_id: 7654,
+    error: 'NOERROR'
+  })
+  testEncoder(t, packet.tsig, {
+    algorithm: 'HMAC-MD5.SIG-ALG.REG.INT',
+    time_signed: 853804800,
+    fudge: 300,
+    mac: Buffer.from([0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]),
+    original_id: 7654,
+    error: 'BADTIME',
+    other: Buffer.from([9, 8, 7, 6, 5, 4, 3, 2, 1, 0])
   })
   t.end()
 })

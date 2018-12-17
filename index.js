@@ -1,9 +1,9 @@
 'use strict'
 
 const types = require('./types')
-const rcodes = require('./rcodes')
+const rcodes = exports.rcodes = require('./rcodes')
 const opcodes = require('./opcodes')
-const classes = require('./classes')
+const classes = exports.classes = require('./classes')
 const ip = require('ip')
 
 const QUERY_FLAG = 0
@@ -77,6 +77,7 @@ name.decode.bytes = 0
 
 name.encodingLength = function (n) {
   if (n === '.') return 1
+  n = n.replace(/^\.|\.$/gm, '')
   return Buffer.byteLength(n) + 2
 }
 
@@ -1135,6 +1136,104 @@ rds.encodingLength = function (digest) {
   return 6 + Buffer.byteLength(digest.digest)
 }
 
+const rtsig = exports.tsig = {}
+
+rtsig.encode = function (tsig, buf, offset) {
+  if (!buf) buf = Buffer.allocUnsafe(rtsig.encodingLength(tsig))
+  if (!offset) offset = 0
+  const oldOffset = offset
+
+  const digestdata = tsig.mac
+  if (!Buffer.isBuffer(digestdata)) {
+    throw new Error('TSIG mac must be a Buffer')
+  }
+
+  offset += 2 // Leave space for length
+  // Algorithm name
+  name.encode(tsig.algorithm, buf, offset)
+  offset += name.encode.bytes
+  // Encode epoch as 48 bit integer
+  buf.writeUInt16BE(tsig.time_signed / 4294967296, offset)
+  offset += 2
+  buf.writeUInt32BE(tsig.time_signed & 0xFFFFFFFF, offset)
+  offset += 4
+  // Fudge
+  buf.writeUInt16BE(tsig.fudge, offset)
+  offset += 2
+  // MAC Size
+  buf.writeUInt16BE(digestdata.length, offset)
+  offset += 2
+  // MAC
+  digestdata.copy(buf, offset, 0)
+  offset += digestdata.length
+  // Original ID
+  buf.writeUInt16BE(tsig.original_id, offset)
+  offset += 2
+  // Error
+  buf.writeUInt16BE(rcodes.toRcode(tsig.error), offset)
+  offset += 2
+  // Other
+  if (tsig.other) {
+    if (!Buffer.isBuffer(tsig.other)) {
+      throw new Error('TSIG other must be a Buffer')
+    }
+    buf.writeUInt16BE(tsig.other.length, offset)
+    offset += 2
+    tsig.other.copy(buf, offset, 0)
+    offset += tsig.other.length
+  } else {
+    buf.writeUInt16BE(0, offset)
+    offset += 2
+  }
+
+  rtsig.encode.bytes = offset - oldOffset
+  buf.writeUInt16BE(rtsig.encode.bytes - 2, oldOffset)
+  return buf
+}
+
+rtsig.encode.bytes = 0
+
+rtsig.decode = function (buf, offset) {
+  if (!offset) offset = 0
+  const oldOffset = offset
+
+  var tsig = {}
+  offset += 2 // Skip RDLEN
+  tsig.algorithm = name.decode(buf, offset)
+  offset += name.decode.bytes
+  var timeSigned1 = buf.readUInt16BE(offset)
+  offset += 2
+  var timeSigned2 = buf.readUInt32BE(offset)
+  offset += 4
+  tsig.time_signed = (timeSigned1 * 4294967296) + timeSigned2
+  tsig.fudge = buf.readUInt16BE(offset)
+  offset += 2
+  var macLen = buf.readUInt16BE(offset)
+  offset += 2
+  tsig.mac = buf.slice(offset, offset + macLen)
+  offset += macLen
+  tsig.original_id = buf.readUInt16BE(offset)
+  offset += 2
+  tsig.error = rcodes.toString(buf.readUInt16BE(offset))
+  offset += 2
+  var otherLen = buf.readUInt16BE(offset)
+  offset += 2
+  if (otherLen > 0) {
+    tsig.other = buf.slice(offset, offset + otherLen)
+    offset += otherLen
+  } else {
+    tsig.other = null
+  }
+  rtsig.decode.bytes = offset - oldOffset
+  return tsig
+}
+
+rtsig.decode.bytes = 0
+
+rtsig.encodingLength = function (tsig) {
+  return 18 + name.encodingLength(tsig.algorithm) + Buffer.byteLength(tsig.mac) + (tsig.other ? Buffer.byteLength(tsig.other) : 0)
+}
+
 const renc = exports.record = function (type) {
   switch (type.toUpperCase()) {
     case 'A': return ra
@@ -1156,6 +1255,7 @@ const renc = exports.record = function (type) {
     case 'NSEC': return rnsec
     case 'NSEC3': return rnsec3
     case 'DS': return rds
+    case 'TSIG': return rtsig
   }
   return runknown
 }

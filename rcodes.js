@@ -23,6 +23,9 @@ exports.toString = function (rcode) {
     case 13: return 'RCODE_13'
     case 14: return 'RCODE_14'
     case 15: return 'RCODE_15'
+    case 16: return 'BADSIG'
+    case 17: return 'BADKEY'
+    case 18: return 'BADTIME'
   }
   return 'RCODE_' + rcode
 }
@@ -45,6 +48,9 @@ exports.toRcode = function (code) {
     case 'RCODE_13': return 13
     case 'RCODE_14': return 14
     case 'RCODE_15': return 15
+    case 'BADSIG': return 16
+    case 'BADKEY': return 17
+    case 'BADTIME': return 18
   }
   return 0
 }

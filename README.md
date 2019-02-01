@@ -21,7 +21,6 @@ const buf = dnsPacket.encode({
   flags: dnsPacket.RECURSION_DESIRED,
   questions: [{
     type: 'A',
-    class: 'IN',
     name: 'google.com'
   }]
 })
@@ -115,7 +114,7 @@ A question looks like this
 }
 ```
 
-And an answers, additional, or authority looks like this
+And an answer, additional, or authority looks like this
 
 ``` js
 {
@@ -278,6 +277,15 @@ Make sure to send the packet to the server that is the master for the zone.
 ``` js
 {
   data: 'points.to.another.record'
+}
+```
+
+#### `RP`
+
+``` js
+{
+  mbox: 'admin.example.com',
+  txt: 'txt.example.com'
 }
 ```
 

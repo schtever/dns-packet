@@ -880,6 +880,45 @@ rrrsig.encodingLength = function (sig) {
     Buffer.byteLength(sig.signature)
 }
 
+const rrp = exports.rp = {}
+
+rrp.encode = function (data, buf, offset) {
+  if (!buf) buf = Buffer.allocUnsafe(rrp.encodingLength(data))
+  if (!offset) offset = 0
+  const oldOffset = offset
+
+  offset += 2 // Leave space for length
+  name.encode(data.mbox || '.', buf, offset)
+  offset += name.encode.bytes
+  name.encode(data.txt || '.', buf, offset)
+  offset += name.encode.bytes
+  rrp.encode.bytes = offset - oldOffset
+  buf.writeUInt16BE(rrp.encode.bytes - 2, oldOffset)
+  return buf
+}
+
+rrp.encode.bytes = 0
+
+rrp.decode = function (buf, offset) {
+  if (!offset) offset = 0
+  const oldOffset = offset
+
+  const data = {}
+  offset += 2
+  data.mbox = name.decode(buf, offset) || '.'
+  offset += name.decode.bytes
+  data.txt = name.decode(buf, offset) || '.'
+  offset += name.decode.bytes
+  rrp.decode.bytes = offset - oldOffset
+  return data
+}
+
+rrp.decode.bytes = 0
+
+rrp.encodingLength = function (data) {
+  return 2 + name.encodingLength(data.mbox || '.') + name.encodingLength(data.txt || '.')
+}
+
 const typebitmap = {}
 
 typebitmap.encode = function (typelist, buf, offset) {
@@ -1252,6 +1291,7 @@ const renc = exports.record = function (type) {
     case 'OPT': return ropt
     case 'DNSKEY': return rdnskey
     case 'RRSIG': return rrrsig
+    case 'RP': return rrp
     case 'NSEC': return rnsec
     case 'NSEC3': return rnsec3
     case 'DS': return rds

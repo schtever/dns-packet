@@ -471,6 +471,21 @@ tape('rrsig', function (t) {
   t.end()
 })
 
+tape('rrp', function (t) {
+  testEncoder(t, packet.rp, {
+    mbox: 'foo.bar.com',
+    txt: 'baz.bar.com'
+  })
+  testEncoder(t, packet.rp, {
+    mbox: 'foo.bar.com'
+  })
+  testEncoder(t, packet.rp, {
+    txt: 'baz.bar.com'
+  })
+  testEncoder(t, packet.rp, {})
+  t.end()
+})
+
 tape('nsec', function (t) {
   testEncoder(t, packet.nsec, {
     nextDomain: 'foo.com',

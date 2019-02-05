@@ -466,7 +466,7 @@ rptr.decode = function (buf, offset) {
 rptr.decode.bytes = 0
 
 rptr.encodingLength = function (data) {
-  return name.encodingLength(data) + 2
+  return data ? name.encodingLength(data) + 2 : 2
 }
 
 const rsrv = exports.srv = {}
@@ -632,8 +632,8 @@ ra.decode = function (buf, offset) {
 
 ra.decode.bytes = 0
 
-ra.encodingLength = function () {
-  return 6
+ra.encodingLength = function (data) {
+  return data ? 6 : 2
 }
 
 const raaaa = exports.aaaa = {}
@@ -1332,9 +1332,15 @@ answer.encode = function (a, buf, offset) {
     buf.writeUInt32BE(a.ttl || 0, offset + 4)
 
     offset += 8
-    const enc = renc(a.type)
-    enc.encode(a.data, buf, offset)
-    offset += enc.encode.bytes
+    if (a.data === null || a.data === undefined) {
+      // Set RDLENGTH to zero
+      buf.writeUInt16BE(0, offset)
+      offset += 2
+    } else {
+      const enc = renc(a.type)
+      enc.encode(a.data, buf, offset)
+      offset += enc.encode.bytes
+    }
   }
 
   answer.encode.bytes = offset - oldOffset
